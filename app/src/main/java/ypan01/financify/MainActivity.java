@@ -6,11 +6,13 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,7 +29,11 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import okhttp3.ResponseBody;
@@ -38,6 +44,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
+
+    //public List<Transaction> transactions = new ArrayList<>();
 
     public static class DesignDemoFragment extends android.support.v4.app.Fragment {
         private static final String TAB_POSITION = "tab_position";
@@ -54,6 +62,11 @@ public class MainActivity extends AppCompatActivity {
         private Button withdrawButton;
         private Button depositButton;
         private CurrencyEditText currencyEditText;
+        private List<Transaction> m_trans = new ArrayList<>();
+        private View root;
+
+        private TextView tv;
+        private BarGraph bg;
 
         public DesignDemoFragment() {
 
@@ -74,34 +87,82 @@ public class MainActivity extends AppCompatActivity {
             int tabPosition = args.getInt(TAB_POSITION);
 
             if (tabPosition == 0) {
-                View root = inflater.inflate(R.layout.drawer_header, container, false);
-                TextView tv = (TextView)root.findViewById(R.id.tv);
-                BarGraph bg = (BarGraph)root.findViewById(R.id.bg);
-                tv.setText("Total Balance: $2,403.25");
-                tv.setTextColor(getResources().getColor(R.color.colorPrimary));
-                tv.setTextSize(20);
+                root = inflater.inflate(R.layout.overview, container, false);
+                bg = (BarGraph)root.findViewById(R.id.bg);
+                handler = new Handler(Looper.getMainLooper());
 
-                ArrayList<Bar> points = new ArrayList<Bar>();
-                Bar d = new Bar();
-                d.setColor(Color.parseColor("#99CC00"));
-                d.setName("Test1");
-                d.setValue(1200.15f);
-                Bar d2 = new Bar();
-                d2.setColor(Color.parseColor("#FFBB33"));
-                d2.setName("Test2");
-                d2.setValue(2203.10f);
-                points.add(d);
-                points.add(d2);
+                //if (savedInstanceState == null) {
+                    String baseURL = this.getResources().getString(R.string.api_url);
+                    Retrofit client = new Retrofit.Builder().baseUrl(baseURL).addConverterFactory(GsonConverterFactory.create()).build();
 
-                bg.setBars(points);
-                bg.setUnit("$");
+                    service = client.create(FinancifyService.class);
+                    Call<ResponseBody> call = service.getTransactions();
+                    call.enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                            try {
+                                String body = response.body().string();
+                                JSONObject responseObj = new JSONObject(body);
+                                int numTransactions = responseObj.length();
+                                for (int i = 0; i < numTransactions; i++) {
+                                    JSONObject transObj = responseObj.getJSONObject("" + i);
+                                    double amount = transObj.getDouble("amount");
+                                    int isDeposit = transObj.getInt("isDeposit");
+                                    if (isDeposit == 1) {
+                                        depositTotal += amount;
+                                    } else {
+                                        withdrawTotal += amount;
+                                    }
+                                    String dateStr = transObj.getString("date");
+                                    java.sql.Date date = java.sql.Date.valueOf(dateStr);
+                                }
+                                Runnable runnable = new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        DecimalFormat df = new DecimalFormat("0.00");
+                                        tv.setText("Total Balance: $" + df.format(depositTotal - withdrawTotal));
+                                        tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+                                        tv.setTextSize(20);
+
+                                        ArrayList<Bar> points = new ArrayList<Bar>();
+                                        Bar d = new Bar();
+                                        d.setColor(Color.parseColor("#99CC00"));
+                                        d.setName("Deposit");
+                                        d.setValue((float) depositTotal);
+                                        Bar d2 = new Bar();
+                                        d2.setColor(Color.parseColor("#FFBB33"));
+                                        d2.setName("Withdraw");
+                                        d2.setValue((float) withdrawTotal);
+                                        points.add(d);
+                                        points.add(d2);
+
+                                        bg.setBars(points);
+                                        bg.setUnit("$");
+                                    }
+                                };
+                                handler.post(runnable);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<ResponseBody> call, Throwable t) {
+                            Log.d("Error", t.getMessage());
+                        }
+                    });
+                /*}
+                else {
+                    m_trans = savedInstanceState.getParcelableArrayList("key");
+                    transactions = savedInstanceState.getParcelableArrayList("key");
+                }*/
 
                 return root;
             }
             else if (tabPosition == 1) {
-                View root  = inflater.inflate(R.layout.transactions, container, false);
-                //TextView totalBalAmt = (TextView)root.findViewById(R.id.total_balance_amount);
-                //totalBalAmt.setText("$206.12");
+                root  = inflater.inflate(R.layout.transactions, container, false);
                 totalBalanceView = (TextView)root.findViewById(R.id.total_balance_amount);
                 transAdapter = new TransactionListAdapter(root.getContext(), transactions);
                 handler = new Handler(Looper.getMainLooper());
@@ -111,57 +172,59 @@ public class MainActivity extends AppCompatActivity {
                 depositButton = (Button)root.findViewById(R.id.deposit_button);
                 currencyEditText = (CurrencyEditText)root.findViewById(R.id.currency_text);
 
-                String baseURL = this.getResources().getString(R.string.api_url);
-                Retrofit client = new Retrofit.Builder().baseUrl(baseURL).addConverterFactory(GsonConverterFactory.create()).build();
+                if (transactions.isEmpty() && withdrawTotal == 0 && depositTotal == 0) {
+                    String baseURL = this.getResources().getString(R.string.api_url);
+                    Retrofit client = new Retrofit.Builder().baseUrl(baseURL).addConverterFactory(GsonConverterFactory.create()).build();
 
-                service = client.create(FinancifyService.class);
-                Call<ResponseBody> call = service.getTransactions();
-                call.enqueue(new Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        try {
-                            String body = response.body().string();
-                            JSONObject responseObj = new JSONObject(body);
-                            int numTransactions = responseObj.length();
-                            for (int i = 0; i < numTransactions; i++) {
-                                JSONObject transObj = responseObj.getJSONObject("" + i);
-                                //int userId = transObj.getInt("userId");
-                                String isDepositStr = transObj.getString("isDeposit");
-                                double amount = transObj.getDouble("amount");
-                                int isDeposit;
-                                if (isDepositStr.equals("1")) {
-                                    isDeposit = 1;
-                                    depositTotal += amount;
-                                } else {
-                                    isDeposit = 0;
-                                    withdrawTotal += amount;
+                    service = client.create(FinancifyService.class);
+                    Call<ResponseBody> call = service.getTransactions();
+                    call.enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                            try {
+                                String body = response.body().string();
+                                JSONObject responseObj = new JSONObject(body);
+                                int numTransactions = responseObj.length();
+                                for (int i = 0; i < numTransactions; i++) {
+                                    JSONObject transObj = responseObj.getJSONObject("" + i);
+                                    //int userId = transObj.getInt("userId");
+                                    double amount = transObj.getDouble("amount");
+                                    int isDeposit = transObj.getInt("isDeposit");
+                                    if (isDeposit == 1) {
+                                        depositTotal += amount;
+                                    } else {
+                                        withdrawTotal += amount;
+                                    }
+                                    String dateStr = transObj.getString("date");
+                                    java.sql.Date date = java.sql.Date.valueOf(dateStr);
+
+                                    Transaction trans = new Transaction(isDeposit, amount, date);
+                                    transactions.add(trans);
+                                    transAdapter.notifyDataSetChanged();
                                 }
-
-                                //Transaction trans = new Transaction(userId, isDeposit, amount);
-                                Transaction trans = new Transaction(isDeposit, amount);
-                                transactions.add(trans);
+                                Collections.reverse(transactions);
                                 transAdapter.notifyDataSetChanged();
+                                Runnable runnable = new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        DecimalFormat df = new DecimalFormat("0.00");
+                                        totalBalanceView.setText(df.format(depositTotal - withdrawTotal));
+                                    }
+                                };
+                                handler.post(runnable);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
-                            Runnable runnable = new Runnable() {
-                                @Override
-                                public void run() {
-                                    DecimalFormat df = new DecimalFormat("0.00");
-                                    totalBalanceView.setText(df.format(depositTotal - withdrawTotal));
-                                }
-                            };
-                            handler.post(runnable);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } catch (JSONException e) {
-                            e.printStackTrace();
                         }
-                    }
 
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-                        Log.d("Error", t.getMessage());
-                    }
-                });
+                        @Override
+                        public void onFailure(Call<ResponseBody> call, Throwable t) {
+                            Log.d("Error", t.getMessage());
+                        }
+                    });
+                }
 
                 withdrawButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -171,7 +234,8 @@ public class MainActivity extends AppCompatActivity {
                             input = input.substring(1, input.length());
                             double amount = Double.parseDouble(input);
                             if (amount > 0) {
-                                Transaction newTrans = new Transaction(0, amount);
+                                java.sql.Date date = new java.sql.Date(new Date().getTime());
+                                Transaction newTrans = new Transaction(0, amount, date);
 
                                 transactions.add(0, newTrans);
                                 transAdapter.notifyDataSetChanged();
@@ -180,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
                                 DecimalFormat df = new DecimalFormat("0.00");
                                 totalBalanceView.setText(df.format(depositTotal - withdrawTotal));
 
-                                Call<ResponseBody> createCall = service.createTransaction(newTrans.isDeposit, newTrans.amount);
+                                Call<ResponseBody> createCall = service.createTransaction(newTrans.isDeposit, newTrans.amount, newTrans.date);
                                 createCall.enqueue(new Callback<ResponseBody>() {
                                     @Override
                                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -198,8 +262,8 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 currencyEditText.setText("$0.00");
-                                //InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                                //imm.hideSoftInputFromWindow(currencyEditText.getWindowToken(), 0);
+                                InputMethodManager imm = (InputMethodManager) root.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                                imm.hideSoftInputFromWindow(currencyEditText.getWindowToken(), 0);
                             }
                         }
                     }
@@ -213,7 +277,8 @@ public class MainActivity extends AppCompatActivity {
                             input = input.substring(1, input.length());
                             double amount = Double.parseDouble(input);
                             if (amount > 0) {
-                                Transaction newTrans = new Transaction(1, amount);
+                                java.sql.Date date = new java.sql.Date(new Date().getTime());
+                                Transaction newTrans = new Transaction(1, amount, date);
 
                                 transactions.add(0, newTrans);
                                 transAdapter.notifyDataSetChanged();
@@ -222,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
                                 DecimalFormat df = new DecimalFormat("0.00");
                                 totalBalanceView.setText(df.format(depositTotal - withdrawTotal));
 
-                                Call<ResponseBody> createCall = service.createTransaction(newTrans.isDeposit, newTrans.amount);
+                                Call<ResponseBody> createCall = service.createTransaction(newTrans.isDeposit, newTrans.amount, newTrans.date);
                                 createCall.enqueue(new Callback<ResponseBody>() {
                                     @Override
                                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -240,8 +305,8 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 currencyEditText.setText("$0.00");
-                                //InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                                //imm.hideSoftInputFromWindow(currencyEditText.getWindowToken(), 0);
+                                InputMethodManager imm = (InputMethodManager) root.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                                imm.hideSoftInputFromWindow(currencyEditText.getWindowToken(), 0);
                             }
                         }
                     }
@@ -250,7 +315,8 @@ public class MainActivity extends AppCompatActivity {
                 return root;
             }
             else if (tabPosition == 2) {
-                PieGraph pg = new PieGraph(getActivity());
+                root  = inflater.inflate(R.layout.categories, container, false);
+                PieGraph pg = (PieGraph)root.findViewById(R.id.pg);
                 PieSlice slice = new PieSlice();
                 slice.setColor(Color.parseColor("#99CC00"));
                 slice.setValue(2);
@@ -263,7 +329,7 @@ public class MainActivity extends AppCompatActivity {
                 slice.setColor(Color.parseColor("#AA66CC"));
                 slice.setValue(8);
                 pg.addSlice(slice);
-                return pg;
+                return root;
             }
             else {
                 TextView tv = new TextView(getActivity());
@@ -275,13 +341,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     static class DesignDemoPagerAdapter extends FragmentStatePagerAdapter {
+
+        private SparseArray<String> mPageReferenceMap = new SparseArray<>();
+
         public DesignDemoPagerAdapter(android.support.v4.app.FragmentManager fm) {
             super(fm);
         }
 
         @Override
         public android.support.v4.app.Fragment getItem(int position) {
-            return DesignDemoFragment.newInstance(position);
+            DesignDemoFragment fragment = DesignDemoFragment.newInstance(position);
+            mPageReferenceMap.put(position, "Tag" + position);
+            return fragment;
+        }
+
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            super.destroyItem(container, position, object);
+            mPageReferenceMap.remove(position);
         }
 
         @Override
@@ -312,8 +389,16 @@ public class MainActivity extends AppCompatActivity {
         DesignDemoPagerAdapter adapter = new DesignDemoPagerAdapter(getSupportFragmentManager());
         ViewPager viewPager = (ViewPager)findViewById(R.id.viewpager);
         viewPager.setAdapter(adapter);
+        //viewPager.setCurrentItem(1);
         TabLayout tabLayout = (TabLayout)findViewById(R.id.tablayout);
         tabLayout.setupWithViewPager(viewPager);
 
     }
+
+    /*@Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        ArrayList<Transaction> transArrList = new ArrayList<Transaction>(transactions);
+        outState.putParcelableArrayList("key", transArrList);
+    }*/
 }
