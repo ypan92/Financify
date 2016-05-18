@@ -88,7 +88,9 @@ public class MainActivity extends AppCompatActivity {
 
             if (tabPosition == 0) {
                 root = inflater.inflate(R.layout.overview, container, false);
+                tv = (TextView)root.findViewById(R.id.tv);
                 bg = (BarGraph)root.findViewById(R.id.bg);
+                //BarGraph bg2 = (BarGraph)root.findViewById(R.id.bg2);
                 handler = new Handler(Looper.getMainLooper());
 
                 //if (savedInstanceState == null) {
