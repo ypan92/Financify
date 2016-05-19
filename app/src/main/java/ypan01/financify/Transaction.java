@@ -1,6 +1,6 @@
 package ypan01.financify;
 
-import java.util.Date;
+import java.sql.Date;
 
 /**
  * Created by Yang on 5/14/2016.
@@ -28,8 +28,7 @@ public class Transaction {
         this.amount = amount;
     }
 
-    public Transaction(int userId, int isDeposit, double amount, Date date) {
-        this.userId = userId;
+    public Transaction(int isDeposit, double amount, Date date) {
         this.isDeposit = isDeposit;
         this.amount = amount;
         this.date = date;

@@ -21,7 +21,7 @@
        under the License.
  */
 
-package ypan01.financify;
+package ypan01.financify.Holograph;
 
 import android.content.Context;
 import android.graphics.*;
@@ -34,6 +34,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
+
+import ypan01.financify.R;
 
 public class BarGraph extends View {
 
