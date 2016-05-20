@@ -5,6 +5,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -15,11 +16,14 @@ public class TransactionListAdapter extends BaseAdapter {
     private Context m_context;
 
     private List<Transaction> m_transList;
+    private List<Transaction> m_revTransList;
 
     public TransactionListAdapter(Context context, List<Transaction> transList) {
         //TODO
         m_context = context;
         m_transList = transList;
+        m_revTransList = transList;
+        Collections.reverse(m_revTransList);
     }
 
     @Override
@@ -41,6 +45,12 @@ public class TransactionListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         if (convertView == null) {
             TransactionView newView = new TransactionView(m_context, m_transList.get(position));
+            newView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    
+                }
+            });
             return newView;
         }
         else {

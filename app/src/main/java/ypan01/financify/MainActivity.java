@@ -65,8 +65,10 @@ public class MainActivity extends AppCompatActivity {
         private CurrencyEditText currencyEditText;
 
         // elements of overview tab
-        private TextView totalLabelView;
+        private TextView lastMonthTotal;
+        private TextView thisMonthTotal;
         private BarGraph lastMonthGraph;
+        private BarGraph thisMonthGraph;
 
         public TabFragment() {
 
@@ -88,26 +90,10 @@ public class MainActivity extends AppCompatActivity {
 
             if (tabPosition == 0) {
                 View root = inflater.inflate(R.layout.overview, container, false);
-                totalLabelView = (TextView)root.findViewById(R.id.tv);
+                lastMonthTotal = (TextView)root.findViewById(R.id.tv);
                 lastMonthGraph = (BarGraph)root.findViewById(R.id.bg);
-                /*tv.setText("Total Balance: $2,403.25");
-                tv.setTextColor(getResources().getColor(R.color.colorPrimary));
-                tv.setTextSize(20);
-
-                ArrayList<Bar> points = new ArrayList<Bar>();
-                Bar d = new Bar();
-                d.setColor(Color.parseColor("#99CC00"));
-                d.setName("Test1");
-                d.setValue(1200.15f);
-                Bar d2 = new Bar();
-                d2.setColor(Color.parseColor("#FFBB33"));
-                d2.setName("Test2");
-                d2.setValue(2203.10f);
-                points.add(d);
-                points.add(d2);
-
-                bg.setBars(points);
-                bg.setUnit("$");*/
+                thisMonthTotal = (TextView)root.findViewById(R.id.tv2);
+                thisMonthGraph = (BarGraph)root.findViewById(R.id.bg2);
 
                 Date currentDate = new Date(new java.util.Date().getTime());
                 Calendar cal = Calendar.getInstance();
@@ -119,10 +105,13 @@ public class MainActivity extends AppCompatActivity {
                 String baseURL = this.getResources().getString(R.string.api_url);
                 Retrofit client = new Retrofit.Builder().baseUrl(baseURL).addConverterFactory(GsonConverterFactory.create()).build();
                 service = client.create(TransactionService.class);
+
                 Call<ResponseBody> lastMonthTransCall = service.getMonthTransactions(month, year);
                 lastMonthTransCall.enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                        depositTotal = 0;
+                        withdrawTotal = 0;
                         try {
                             String body = response.body().string();
                             JSONObject responseObj = new JSONObject(body);
@@ -144,9 +133,9 @@ public class MainActivity extends AppCompatActivity {
                                 @Override
                                 public void run() {
                                     DecimalFormat df = new DecimalFormat("0.00");
-                                    totalLabelView.setText("Total Balance: $" + df.format(depositTotal - withdrawTotal));
-                                    totalLabelView.setTextColor(getResources().getColor(R.color.colorPrimary));
-                                    totalLabelView.setTextSize(20);
+                                    lastMonthTotal.setText("Total Balance: $" + df.format(depositTotal - withdrawTotal));
+                                    lastMonthTotal.setTextColor(getResources().getColor(R.color.colorPrimary));
+                                    lastMonthTotal.setTextSize(20);
 
                                     ArrayList<Bar> lastMonthPoints = new ArrayList<Bar>();
                                     Bar lastDepositBar = new Bar();
@@ -162,6 +151,66 @@ public class MainActivity extends AppCompatActivity {
 
                                     lastMonthGraph.setBars(lastMonthPoints);
                                     lastMonthGraph.setUnit("$");
+
+                                }
+                            };
+                            handler.post(runnable);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseBody> call, Throwable t) {
+                        Log.d("Error", t.getMessage());
+                    }
+                });
+
+                Call<ResponseBody> thisMonthCall = service.getMonthTransactions(month+1, year);
+                thisMonthCall.enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                        depositTotal = 0;
+                        withdrawTotal = 0;
+                        try {
+                            String body = response.body().string();
+                            JSONObject responseObj = new JSONObject(body);
+                            int numTrans = responseObj.length();
+                            for (int i = 0; i < numTrans; i++) {
+                                JSONObject transObj = responseObj.getJSONObject("" + i);
+                                int isDeposit = transObj.getInt("isDeposit");
+                                double amount = transObj.getDouble("amount");
+                                if (isDeposit == 1) {
+                                    depositTotal += amount;
+                                } else {
+                                    withdrawTotal += amount;
+                                }
+                                String dateStr = transObj.getString("date");
+                                Date date = Date.valueOf(dateStr);
+                            }
+
+                            Runnable runnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    DecimalFormat df = new DecimalFormat("0.00");
+                                    thisMonthTotal.setText("Total Balance: $" + df.format(depositTotal - withdrawTotal));
+                                    thisMonthTotal.setTextColor(getResources().getColor(R.color.colorPrimary));
+                                    thisMonthTotal.setTextSize(20);
+
+                                    ArrayList<Bar> thisMonthPoints = new ArrayList<Bar>();
+                                    Bar thisDepositBar = new Bar();
+                                    thisDepositBar.setColor(Color.parseColor("#99CC00"));
+                                    thisDepositBar.setName("Deposit");
+                                    thisDepositBar.setValue((float) depositTotal);
+                                    Bar thisWithdrawBar = new Bar();
+                                    thisWithdrawBar.setColor(Color.parseColor("#FFBB33"));
+                                    thisWithdrawBar.setName("Withdraw");
+                                    thisWithdrawBar.setValue((float) withdrawTotal);
+                                    thisMonthPoints.add(thisDepositBar);
+                                    thisMonthPoints.add(thisWithdrawBar);
+
+                                    thisMonthGraph.setBars(thisMonthPoints);
+                                    thisMonthGraph.setUnit("$");
 
                                 }
                             };
