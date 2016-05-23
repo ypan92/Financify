@@ -11,6 +11,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 
+import org.json.JSONObject;
+
 import java.sql.Date;
 
 import okhttp3.ResponseBody;
@@ -85,7 +87,14 @@ public class TransactionDetailActivity extends AppCompatActivity {
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                         //Intent openMain = new Intent(getApplicationContext(), MainActivity.class);
                         //getApplicationContext().startActivity(openMain);
-                        onBackPressed();
+                        try {
+                            String body = response.body().string();
+                            JSONObject obj = new JSONObject(body);
+                            onBackPressed();
+                        }
+                        catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
 
                     @Override

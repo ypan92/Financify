@@ -7,6 +7,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.text.DecimalFormat;
+
 /**
  * Created by Yang on 5/23/2016.
  */
@@ -33,7 +35,8 @@ public class CategoryView extends LinearLayout {
 
     public void setCategoryLabel(CategoryLabel categoryLabel) {
         imageView.setBackgroundColor(Color.parseColor(categoryLabel.color));
-        labelName.setText(categoryLabel.name);
+        DecimalFormat df = new DecimalFormat("0.00");
+        labelName.setText(categoryLabel.name + " (" + df.format(categoryLabel.percent) + "%)");
     }
 
 }

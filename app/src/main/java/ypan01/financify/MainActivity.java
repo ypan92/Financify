@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
         double techTotal = 0;
         double kitchenTotal = 0;
         double furnitureTotal = 0;
+        double total = 0;
 
         //elements of categories tab
         private PieGraph pg;
@@ -439,50 +440,10 @@ public class MainActivity extends AppCompatActivity {
                 View root = inflater.inflate(R.layout.categories, container, false);
                 pg = (PieGraph)root.findViewById(R.id.pg);
                 catLabels = (ListView)root.findViewById(R.id.category_labels);
-                /*PieSlice slice = new PieSlice();
-                slice.setColor(Color.parseColor("#99CC00"));
-                slice.setValue(2);
-                pg.addSlice(slice);
-                slice = new PieSlice();
-                slice.setColor(Color.parseColor("#FFBB33"));
-                slice.setValue(3);
-                pg.addSlice(slice);
-                slice = new PieSlice();
-                slice.setColor(Color.parseColor("#AA66CC"));
-                slice.setValue(8);
-                pg.addSlice(slice);*/
 
                 handler = new Handler(Looper.getMainLooper());
                 catAdapter = new CategoryListAdapter(root.getContext(), categoryLabels);
                 catLabels.setAdapter(catAdapter);
-
-                CategoryLabel noLabel = new CategoryLabel("#1188AA", "Uncategorized");
-                categoryLabels.add(noLabel);
-                catAdapter.notifyDataSetChanged();
-
-                CategoryLabel foodLabel = new CategoryLabel("#FFBB33", "Food");
-                categoryLabels.add(foodLabel);
-                catAdapter.notifyDataSetChanged();
-
-                CategoryLabel gasLabel = new CategoryLabel("#AA66CC", "Gas");
-                categoryLabels.add(gasLabel);
-                catAdapter.notifyDataSetChanged();
-
-                CategoryLabel clothesLabel = new CategoryLabel("#77DD11", "Clothes");
-                categoryLabels.add(clothesLabel);
-                catAdapter.notifyDataSetChanged();
-
-                CategoryLabel techLabel = new CategoryLabel("#33AA55", "Technology");
-                categoryLabels.add(techLabel);
-                catAdapter.notifyDataSetChanged();
-
-                CategoryLabel kitchenLabel = new CategoryLabel("#DD00FF", "Kitchen Hardware");
-                categoryLabels.add(kitchenLabel);
-                catAdapter.notifyDataSetChanged();
-
-                CategoryLabel furnitureLabel = new CategoryLabel("#99CC00", "Furniture");
-                categoryLabels.add(furnitureLabel);
-                catAdapter.notifyDataSetChanged();
 
                 String baseURL = this.getResources().getString(R.string.api_url);
                 Retrofit client = new Retrofit.Builder().baseUrl(baseURL).addConverterFactory(GsonConverterFactory.create()).build();
@@ -516,6 +477,7 @@ public class MainActivity extends AppCompatActivity {
                                 } else if (category == 6) {
                                     furnitureTotal += amount;
                                 }
+                                total += amount;
                             }
                             Collections.reverse(transactions);
                             Runnable runnable = new Runnable() {
@@ -563,6 +525,34 @@ public class MainActivity extends AppCompatActivity {
                                         slice.setValue((float) furnitureTotal);
                                         pg.addSlice(slice);
                                     }
+
+                                    CategoryLabel noLabel = new CategoryLabel("#1188AA", "Uncategorized", (uncategorizedTotal / total) * 100);
+                                    categoryLabels.add(noLabel);
+                                    catAdapter.notifyDataSetChanged();
+
+                                    CategoryLabel foodLabel = new CategoryLabel("#FFBB33", "Food", (foodTotal / total) * 100);
+                                    categoryLabels.add(foodLabel);
+                                    catAdapter.notifyDataSetChanged();
+
+                                    CategoryLabel gasLabel = new CategoryLabel("#AA66CC", "Gas", (gasTotal / total) * 100);
+                                    categoryLabels.add(gasLabel);
+                                    catAdapter.notifyDataSetChanged();
+
+                                    CategoryLabel clothesLabel = new CategoryLabel("#77DD11", "Clothes", (clothesTotal / total) * 100);
+                                    categoryLabels.add(clothesLabel);
+                                    catAdapter.notifyDataSetChanged();
+
+                                    CategoryLabel techLabel = new CategoryLabel("#33AA55", "Technology", (techTotal / total) * 100);
+                                    categoryLabels.add(techLabel);
+                                    catAdapter.notifyDataSetChanged();
+
+                                    CategoryLabel kitchenLabel = new CategoryLabel("#DD00FF", "Kitchen Hardware", (kitchenTotal / total) * 100);
+                                    categoryLabels.add(kitchenLabel);
+                                    catAdapter.notifyDataSetChanged();
+
+                                    CategoryLabel furnitureLabel = new CategoryLabel("#99CC00", "Furniture", (furnitureTotal / total) * 100);
+                                    categoryLabels.add(furnitureLabel);
+                                    catAdapter.notifyDataSetChanged();
                                 }
                             };
                             handler.post(runnable);

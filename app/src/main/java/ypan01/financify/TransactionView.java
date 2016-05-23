@@ -1,7 +1,9 @@
 package ypan01.financify;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -18,6 +20,7 @@ public class TransactionView extends LinearLayout {
     private TextView transTypeText;
     private TextView amountText;
     private TextView dateText;
+    private ImageView catIcon;
 
     private Transaction transaction;
 
@@ -31,6 +34,7 @@ public class TransactionView extends LinearLayout {
         transTypeText = (TextView)findViewById(R.id.trans_type_text);
         amountText = (TextView)findViewById(R.id.trans_amount_text);
         dateText = (TextView)findViewById(R.id.trans_date);
+        catIcon = (ImageView)findViewById(R.id.trans_cat_icon);
 
         //amountText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 16);
 
@@ -59,6 +63,7 @@ public class TransactionView extends LinearLayout {
         int year = cal.get(Calendar.YEAR);
         dateText.setText(month + "/" + day + "/" + year);
 
+        catIcon.setBackgroundColor(Color.parseColor(transaction.getCategoryColorHex()));
     }
 
     public Transaction getTransaction() {

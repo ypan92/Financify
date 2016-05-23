@@ -3,16 +3,40 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView android:id="@+id/trans_type_text"
+    <LinearLayout
+        android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="match_parent">
 
-    <TextView android:id="@+id/trans_date"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="708dp"
+            android:layout_height="match_parent">
 
-    <TextView android:id="@+id/trans_amount_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+            <TextView android:id="@+id/trans_type_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView android:id="@+id/trans_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView android:id="@+id/trans_amount_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/trans_cat_icon"
+                android:layout_gravity="right"
+                android:layout_width="50dp"
+                android:layout_height="50dp" />
+        </LinearLayout>
+    </LinearLayout>
+
 
 </LinearLayout>

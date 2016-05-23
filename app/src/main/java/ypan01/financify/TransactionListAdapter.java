@@ -46,7 +46,7 @@ public class TransactionListAdapter extends BaseAdapter {
 
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
-        if (convertView == null) {
+        /*if (convertView == null) {
             final Transaction trans = m_revTransList.get(position);
             TransactionView newView = new TransactionView(m_context, trans);
             newView.setOnClickListener(new View.OnClickListener() {
@@ -69,6 +69,23 @@ public class TransactionListAdapter extends BaseAdapter {
             TransactionView existingView = (TransactionView)convertView;
             existingView.setTransaction(m_transList.get(position));
             return existingView;
-        }
+        }*/
+        final Transaction trans = m_revTransList.get(position);
+        TransactionView newView = new TransactionView(m_context, trans);
+        newView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent openDetails = new Intent(m_context, TransactionDetailActivity.class);
+                openDetails.putExtra("trans_id", trans.transactionId);
+                openDetails.putExtra("trans_isDeposit", trans.isDeposit);
+                openDetails.putExtra("trans_amount", trans.amount);
+                DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+                String dateStr = df.format(trans.date);
+                openDetails.putExtra("trans_date", dateStr);
+                openDetails.putExtra("trans_cat", trans.category);
+                m_context.startActivity(openDetails);
+            }
+        });
+        return newView;
     }
 }

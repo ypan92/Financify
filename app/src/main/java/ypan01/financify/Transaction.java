@@ -37,4 +37,25 @@ public class Transaction {
         this.date = date;
         this.category = category;
     }
+
+    public String getCategoryColorHex() {
+        switch (category) {
+            case 0:
+                return "#1188AA";
+            case 1:
+                return "#FFBB33";
+            case 2:
+                return "#AA66CC";
+            case 3:
+                return "#77DD11";
+            case 4:
+                return "#33AA55";
+            case 5:
+                return "#DD00FF";
+            case 6:
+                return "#99CC00";
+            default:
+                return "#1188AA";
+        }
+    }
 }
