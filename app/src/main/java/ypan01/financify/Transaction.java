@@ -6,10 +6,12 @@ import java.sql.Date;
  * Created by Yang on 5/14/2016.
  */
 public class Transaction {
+    public int transactionId;
     public int userId;
     public int isDeposit;
     public double amount;
     public Date date;
+    public int category;
 
     public Transaction() {
         userId = -1;
@@ -28,9 +30,11 @@ public class Transaction {
         this.amount = amount;
     }
 
-    public Transaction(int isDeposit, double amount, Date date) {
+    public Transaction(int transactionId, int isDeposit, double amount, Date date, int category) {
+        this.transactionId = transactionId;
         this.isDeposit = isDeposit;
         this.amount = amount;
         this.date = date;
+        this.category = category;
     }
 }

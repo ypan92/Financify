@@ -71,6 +71,20 @@ public class MainActivity extends AppCompatActivity {
         private BarGraph lastMonthGraph;
         private BarGraph thisMonthGraph;
 
+        double uncategorizedTotal = 0;
+        double foodTotal = 0;
+        double gasTotal = 0;
+        double clothesTotal = 0;
+        double techTotal = 0;
+        double kitchenTotal = 0;
+        double furnitureTotal = 0;
+
+        //elements of categories tab
+        private PieGraph pg;
+        private ListView catLabels;
+        private CategoryListAdapter catAdapter;
+        private List<CategoryLabel> categoryLabels = new ArrayList<>();
+
         public TabFragment() {
 
         }
@@ -292,6 +306,7 @@ public class MainActivity extends AppCompatActivity {
                             int numTransactions = responseObj.length();
                             for (int i = 0; i < numTransactions; i++) {
                                 JSONObject transObj = responseObj.getJSONObject("" + i);
+                                int transactionId = transObj.getInt("transactionId");
                                 //int userId = transObj.getInt("userId");
                                 int isDeposit = transObj.getInt("isDeposit");
                                 double amount = transObj.getDouble("amount");
@@ -302,8 +317,9 @@ public class MainActivity extends AppCompatActivity {
                                 }
                                 String dateStr = transObj.getString("date");
                                 Date date = Date.valueOf(dateStr);
+                                int category = transObj.getInt("category");
 
-                                Transaction trans = new Transaction(isDeposit, amount, date);
+                                Transaction trans = new Transaction(transactionId, isDeposit, amount, date, category);
                                 transactions.add(trans);
                                 transAdapter.notifyDataSetChanged();
                             }
@@ -414,12 +430,16 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
+                InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(currencyEditText.getWindowToken(), 0);
+
                 return root;
             }
             else if (tabPosition == 2) {
                 View root = inflater.inflate(R.layout.categories, container, false);
-                PieGraph pg = (PieGraph)root.findViewById(R.id.pg);
-                PieSlice slice = new PieSlice();
+                pg = (PieGraph)root.findViewById(R.id.pg);
+                catLabels = (ListView)root.findViewById(R.id.category_labels);
+                /*PieSlice slice = new PieSlice();
                 slice.setColor(Color.parseColor("#99CC00"));
                 slice.setValue(2);
                 pg.addSlice(slice);
@@ -430,7 +450,134 @@ public class MainActivity extends AppCompatActivity {
                 slice = new PieSlice();
                 slice.setColor(Color.parseColor("#AA66CC"));
                 slice.setValue(8);
-                pg.addSlice(slice);
+                pg.addSlice(slice);*/
+
+                handler = new Handler(Looper.getMainLooper());
+                catAdapter = new CategoryListAdapter(root.getContext(), categoryLabels);
+                catLabels.setAdapter(catAdapter);
+
+                CategoryLabel noLabel = new CategoryLabel("#1188AA", "Uncategorized");
+                categoryLabels.add(noLabel);
+                catAdapter.notifyDataSetChanged();
+
+                CategoryLabel foodLabel = new CategoryLabel("#FFBB33", "Food");
+                categoryLabels.add(foodLabel);
+                catAdapter.notifyDataSetChanged();
+
+                CategoryLabel gasLabel = new CategoryLabel("#AA66CC", "Gas");
+                categoryLabels.add(gasLabel);
+                catAdapter.notifyDataSetChanged();
+
+                CategoryLabel clothesLabel = new CategoryLabel("#77DD11", "Clothes");
+                categoryLabels.add(clothesLabel);
+                catAdapter.notifyDataSetChanged();
+
+                CategoryLabel techLabel = new CategoryLabel("#33AA55", "Technology");
+                categoryLabels.add(techLabel);
+                catAdapter.notifyDataSetChanged();
+
+                CategoryLabel kitchenLabel = new CategoryLabel("#DD00FF", "Kitchen Hardware");
+                categoryLabels.add(kitchenLabel);
+                catAdapter.notifyDataSetChanged();
+
+                CategoryLabel furnitureLabel = new CategoryLabel("#99CC00", "Furniture");
+                categoryLabels.add(furnitureLabel);
+                catAdapter.notifyDataSetChanged();
+
+                String baseURL = this.getResources().getString(R.string.api_url);
+                Retrofit client = new Retrofit.Builder().baseUrl(baseURL).addConverterFactory(GsonConverterFactory.create()).build();
+
+                service = client.create(TransactionService.class);
+                Call<ResponseBody> call = service.getTransactions();
+                call.enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                        try {
+                            String body = response.body().string();
+                            JSONObject responseObj = new JSONObject(body);
+                            int numTransactions = responseObj.length();
+                            for (int i = 0; i < numTransactions; i++) {
+                                JSONObject transObj = responseObj.getJSONObject("" + i);
+                                double amount = transObj.getDouble("amount");
+                                int category = transObj.getInt("category");
+
+                                if (category == 0) {
+                                    uncategorizedTotal += amount;
+                                } else if (category == 1) {
+                                    foodTotal += amount;
+                                } else if (category == 2) {
+                                    gasTotal += amount;
+                                } else if (category == 3) {
+                                    clothesTotal += amount;
+                                } else if (category == 4) {
+                                    techTotal += amount;
+                                } else if (category == 5) {
+                                    kitchenTotal += amount;
+                                } else if (category == 6) {
+                                    furnitureTotal += amount;
+                                }
+                            }
+                            Collections.reverse(transactions);
+                            Runnable runnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (uncategorizedTotal > 0) {
+                                        PieSlice slice = new PieSlice();
+                                        slice.setColor(Color.parseColor("#1188AA"));
+                                        slice.setValue((float)uncategorizedTotal);
+                                        pg.addSlice(slice);
+                                    }
+                                    if (foodTotal > 0) {
+                                        PieSlice slice = new PieSlice();
+                                        slice.setColor(Color.parseColor("#FFBB33"));
+                                        slice.setValue((float)foodTotal);
+                                        pg.addSlice(slice);
+                                    }
+                                    if (gasTotal > 0) {
+                                        PieSlice slice = new PieSlice();
+                                        slice.setColor(Color.parseColor("#AA66CC"));
+                                        slice.setValue((float)gasTotal);
+                                        pg.addSlice(slice);
+                                    }
+                                    if (clothesTotal > 0) {
+                                        PieSlice slice = new PieSlice();
+                                        slice.setColor(Color.parseColor("#77DD11"));
+                                        slice.setValue((float)clothesTotal);
+                                        pg.addSlice(slice);
+                                    }
+                                    if (techTotal > 0) {
+                                        PieSlice slice = new PieSlice();
+                                        slice.setColor(Color.parseColor("#33AA55"));
+                                        slice.setValue((float)techTotal);
+                                        pg.addSlice(slice);
+                                    }
+                                    if (kitchenTotal > 0) {
+                                        PieSlice slice = new PieSlice();
+                                        slice.setColor(Color.parseColor("#DD00FF"));
+                                        slice.setValue((float)kitchenTotal);
+                                        pg.addSlice(slice);
+                                    }
+                                    if (furnitureTotal > 0) {
+                                        PieSlice slice = new PieSlice();
+                                        slice.setColor(Color.parseColor("#99CC00"));
+                                        slice.setValue((float) furnitureTotal);
+                                        pg.addSlice(slice);
+                                    }
+                                }
+                            };
+                            handler.post(runnable);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseBody> call, Throwable t) {
+                        Log.d("Error", t.getMessage());
+                    }
+                });
                 return root;
             }
             else {

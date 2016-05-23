@@ -17,4 +17,9 @@
         android:layout_width="match_parent"
         android:layout_height="200dp" />
 
+    <ListView
+        android:id="@+id/category_labels"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"></ListView>
+
 </LinearLayout>
