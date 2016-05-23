@@ -1,6 +1,7 @@
 package ypan01.financify;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
@@ -82,6 +83,37 @@ public class MainActivity extends AppCompatActivity {
             return fragment;
         }
 
+        protected String getMonth(int month) {
+            switch (month) {
+                case 0:
+                    return "January";
+                case 1:
+                    return "February";
+                case 2:
+                    return "March";
+                case 3:
+                    return "April";
+                case 4:
+                    return "May";
+                case 5:
+                    return "June";
+                case 6:
+                    return "July";
+                case 7:
+                    return "August";
+                case 8:
+                    return "September";
+                case 9:
+                    return "October";
+                case 10:
+                    return "November";
+                case 11:
+                    return "December";
+                default:
+                    return "Not a month";
+            }
+        }
+
         @Nullable
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -99,7 +131,10 @@ public class MainActivity extends AppCompatActivity {
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(currentDate);
                 int month = cal.get(Calendar.MONTH);
-                int year = cal.get(Calendar.YEAR);
+                final int year = cal.get(Calendar.YEAR);
+
+                final String lastMonth = getMonth(month - 1);
+                final String thisMonth = getMonth(month);
 
                 handler = new Handler(Looper.getMainLooper());
                 String baseURL = this.getResources().getString(R.string.api_url);
@@ -133,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
                                 @Override
                                 public void run() {
                                     DecimalFormat df = new DecimalFormat("0.00");
-                                    lastMonthTotal.setText("Total Balance: $" + df.format(depositTotal - withdrawTotal));
+                                    lastMonthTotal.setText(lastMonth + " " + year + " Net Balance: $" + df.format(depositTotal - withdrawTotal));
                                     lastMonthTotal.setTextColor(getResources().getColor(R.color.colorPrimary));
                                     lastMonthTotal.setTextSize(20);
 
@@ -151,6 +186,8 @@ public class MainActivity extends AppCompatActivity {
 
                                     lastMonthGraph.setBars(lastMonthPoints);
                                     lastMonthGraph.setUnit("$");
+
+                                    startActivity(getActivity().getIntent());
 
                                 }
                             };
@@ -193,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
                                 @Override
                                 public void run() {
                                     DecimalFormat df = new DecimalFormat("0.00");
-                                    thisMonthTotal.setText("Total Balance: $" + df.format(depositTotal - withdrawTotal));
+                                    thisMonthTotal.setText(thisMonth + " " + year + " Net Balance: $" + df.format(depositTotal - withdrawTotal));
                                     thisMonthTotal.setTextColor(getResources().getColor(R.color.colorPrimary));
                                     thisMonthTotal.setTextSize(20);
 
@@ -211,6 +248,8 @@ public class MainActivity extends AppCompatActivity {
 
                                     thisMonthGraph.setBars(thisMonthPoints);
                                     thisMonthGraph.setUnit("$");
+
+                                    startActivity(getActivity().getIntent());
 
                                 }
                             };
@@ -441,6 +480,7 @@ public class MainActivity extends AppCompatActivity {
         TabPagerAdapter adapter = new TabPagerAdapter(getSupportFragmentManager());
         ViewPager viewPager = (ViewPager)findViewById(R.id.viewpager);
         viewPager.setAdapter(adapter);
+        //viewPager.setCurrentItem(2);
         TabLayout tabLayout = (TabLayout)findViewById(R.id.tablayout);
         tabLayout.setupWithViewPager(viewPager);
 

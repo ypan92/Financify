@@ -5,4 +5,36 @@
     <string name="deposit">Deposit</string>
     <string name="api_url">http://default-environment.eyqmmrug4y.us-east-1.elasticbeanstalk.com/iconmerce-api/</string>
     <string name="total_balance">Total Balance</string>
+    <string name="submit">Submit</string>
+
+    <string name="category_prompt">Choose a category</string>
+    <string-array name="withdraw_categories">
+        <item>Food</item>
+        <item>Gas</item>
+        <item>Clothes</item>
+        <item>Technology</item>
+        <item>Kitchen Hardware</item>
+        <item>Furniture</item>
+    </string-array>
+
+    <string-array name="transaction_filters">
+        <item>All Time</item>
+        <item>Last Month</item>
+        <item>This Month</item>
+    </string-array>
+
+    <string-array name="months">
+        <item>January</item>
+        <item>February</item>
+        <item>March</item>
+        <item>April</item>
+        <item>May</item>
+        <item>June</item>
+        <item>July</item>
+        <item>August</item>
+        <item>September</item>
+        <item>October</item>
+        <item>November</item>
+        <item>December</item>
+    </string-array>
 </resources>

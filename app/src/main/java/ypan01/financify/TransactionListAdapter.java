@@ -1,10 +1,13 @@
 package ypan01.financify;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;
 
@@ -42,13 +45,20 @@ public class TransactionListAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
         if (convertView == null) {
-            TransactionView newView = new TransactionView(m_context, m_transList.get(position));
+            final Transaction trans = m_revTransList.get(position);
+            TransactionView newView = new TransactionView(m_context, trans);
             newView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    
+                    Intent openDetails = new Intent(m_context, TransactionDetailActivity.class);
+                    openDetails.putExtra("trans_isDeposit", trans.isDeposit);
+                    openDetails.putExtra("trans_amount", trans.amount);
+                    DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+                    String dateStr = df.format(trans.date);
+                    openDetails.putExtra("trans_date", dateStr);
+                    m_context.startActivity(openDetails);
                 }
             });
             return newView;

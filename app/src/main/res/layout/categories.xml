@@ -2,13 +2,16 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="150dp"
-
-    android:padding="16dp"
-    android:theme="@style/ThemeOverlay.AppCompat.Dark"
-    android:gravity="fill">
+    android:layout_height="match_parent">
 
     <!-- Categories Tab -->
+    <Spinner
+        android:entries="@array/transaction_filters"
+        android:gravity="center"
+        android:paddingBottom="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <ypan01.financify.Holograph.PieGraph
         android:id="@+id/pg"
         android:layout_width="match_parent"
