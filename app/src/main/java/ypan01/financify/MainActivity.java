@@ -17,8 +17,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.blackcat.currencyedittext.CurrencyEditText;
@@ -58,41 +60,12 @@ public class MainActivity extends AppCompatActivity {
     public static class TabFragment extends android.support.v4.app.Fragment {
         private static final String TAB_POSITION = "tab_position";
 
-        private double withdrawTotal = 0;
-        private double depositTotal = 0;
-
         private TransactionService service;
         private Handler handler;
 
-        // elements of transactions tab
-        //private TransactionListAdapter transAdapter;
         private ListView transList;
-        //private List<Transaction> transactions = new ArrayList<>();
-        /*private TextView totalBalanceView;
-        private Button withdrawButton;
-        private Button depositButton;
-        private CurrencyEditText currencyEditText;*/
 
-        // elements of overview tab
-        /*private TextView lastMonthTotal;
-        private TextView thisMonthTotal;
-        private BarGraph lastMonthGraph;
-        private BarGraph thisMonthGraph;*/
-
-        /*double uncategorizedTotal = 0;
-        double foodTotal = 0;
-        double gasTotal = 0;
-        double clothesTotal = 0;
-        double techTotal = 0;
-        double kitchenTotal = 0;
-        double furnitureTotal = 0;
-        double total = 0;*/
-
-        //elements of categories tab
-        //private PieGraph pg;
         private ListView catLabels;
-        //private CategoryListAdapter catAdapter;
-        //private List<CategoryLabel> categoryLabels = new ArrayList<>();
 
         public TabFragment() {
 
@@ -169,6 +142,27 @@ public class MainActivity extends AppCompatActivity {
                 withdrawButton = (Button)root.findViewById(R.id.withdraw_button);
                 depositButton = (Button)root.findViewById(R.id.deposit_button);
                 currencyEditText = (CurrencyEditText)root.findViewById(R.id.currency_text);
+                transSpinner = (Spinner)root.findViewById(R.id.trans_time_picker);
+
+                transSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        if (position == 0) {
+
+                        }
+                        else if (position == 1) {
+
+                        }
+                        else if (position == 2) {
+
+                        }
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+
+                    }
+                });
 
                 mBus.post(new GetTransactionEvent());
 
@@ -265,12 +259,33 @@ public class MainActivity extends AppCompatActivity {
                 View root = inflater.inflate(R.layout.categories, container, false);
                 pg = (PieGraph)root.findViewById(R.id.pg);
                 catLabels = (ListView)root.findViewById(R.id.category_labels);
+                catSpinner = (Spinner)root.findViewById(R.id.cat_time_picker);
+
+                catSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        if (position == 0) {
+
+                        }
+                        else if (position == 1) {
+
+                        }
+                        else if (position == 2) {
+
+                        }
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+
+                    }
+                });
 
                 catAdapter = new CategoryListAdapter(root.getContext(), categoryLabels);
                 catLabels.setAdapter(catAdapter);
 
                 //if (total == 0)
-                    mBus.post(new GetCategoryTotalEvent());
+                mBus.post(new GetCategoryTotalEvent());
 
                 return root;
             }
@@ -348,6 +363,7 @@ public class MainActivity extends AppCompatActivity {
     private static Button withdrawButton;
     private static Button depositButton;
     private static CurrencyEditText currencyEditText;
+    private static Spinner transSpinner;
 
     private static TextView lastMonthTotal;
     private static TextView thisMonthTotal;
@@ -357,6 +373,7 @@ public class MainActivity extends AppCompatActivity {
     private static PieGraph pg;
     private static CategoryListAdapter catAdapter;
     private static List<CategoryLabel> categoryLabels = new ArrayList<>();
+    private static Spinner catSpinner;
 
     private static double uncategorizedTotal = 0;
     private static double foodTotal = 0;
@@ -366,6 +383,9 @@ public class MainActivity extends AppCompatActivity {
     private static double kitchenTotal = 0;
     private static double furnitureTotal = 0;
     private static double total = 0;
+
+    private static double withdrawTotal = 0;
+    private static double depositTotal = 0;
 
     private static boolean gotMonths = false;
 

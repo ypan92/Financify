@@ -5,6 +5,7 @@
 
     <!-- Transactions Tab -->
     <Spinner
+        android:id="@+id/trans_time_picker"
         android:entries="@array/transaction_filters"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />

@@ -6,6 +6,7 @@
 
     <!-- Categories Tab -->
     <Spinner
+        android:id="@+id/cat_time_picker"
         android:entries="@array/transaction_filters"
         android:gravity="center"
         android:paddingBottom="10dp"
