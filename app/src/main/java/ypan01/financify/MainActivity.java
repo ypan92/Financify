@@ -45,8 +45,11 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import ypan01.financify.Events.GetCategoryTotalEvent;
+import ypan01.financify.Events.GetFullMonthTransactionEvent;
+import ypan01.financify.Events.GetMonthCategoryTotalEvent;
 import ypan01.financify.Events.GetMonthTransactionEvent;
 import ypan01.financify.Events.GetTransactionEvent;
+import ypan01.financify.Events.SendAmountTotalEvent;
 import ypan01.financify.Events.SendCategoryTotalEvent;
 import ypan01.financify.Events.SendMonthBalanceEvent;
 import ypan01.financify.Events.SendTransactionEvent;
@@ -56,6 +59,42 @@ import ypan01.financify.Holograph.PieGraph;
 import ypan01.financify.Holograph.PieSlice;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static Bus mBus = BusProvider.bus();
+    private static ApiClient mApiClient = ApiClient.getInstance();
+
+    private static TransactionListAdapter transAdapter;
+    private static List<Transaction> transactions = new ArrayList<>();
+
+    private static TextView totalBalanceView;
+    private static Button withdrawButton;
+    private static Button depositButton;
+    private static CurrencyEditText currencyEditText;
+    private static Spinner transSpinner;
+
+    private static TextView lastMonthTotal;
+    private static TextView thisMonthTotal;
+    private static BarGraph lastMonthGraph;
+    private static BarGraph thisMonthGraph;
+
+    private static PieGraph pg;
+    private static CategoryListAdapter catAdapter;
+    private static List<CategoryLabel> categoryLabels = new ArrayList<>();
+    private static Spinner catSpinner;
+
+    private static double uncategorizedTotal = 0;
+    private static double foodTotal = 0;
+    private static double gasTotal = 0;
+    private static double clothesTotal = 0;
+    private static double techTotal = 0;
+    private static double kitchenTotal = 0;
+    private static double furnitureTotal = 0;
+    private static double total = 0;
+
+    private static double withdrawTotal = 0;
+    private static double depositTotal = 0;
+
+    private static boolean gotMonths = false;
 
     public static class TabFragment extends android.support.v4.app.Fragment {
         private static final String TAB_POSITION = "tab_position";
@@ -107,6 +146,12 @@ public class MainActivity extends AppCompatActivity {
                 depositTotal = savedInstanceState.getDouble("depositTotal");
             }*/
 
+            Date currentDate = new Date(new java.util.Date().getTime());
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(currentDate);
+            final int month = cal.get(Calendar.MONTH);
+            final int year = cal.get(Calendar.YEAR);
+
             if (tabPosition == 0) {
                 View root = inflater.inflate(R.layout.overview, container, false);
                 lastMonthTotal = (TextView)root.findViewById(R.id.tv);
@@ -114,13 +159,9 @@ public class MainActivity extends AppCompatActivity {
                 thisMonthTotal = (TextView)root.findViewById(R.id.tv2);
                 thisMonthGraph = (BarGraph)root.findViewById(R.id.bg2);
 
-                Date currentDate = new Date(new java.util.Date().getTime());
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(currentDate);
-                int month = cal.get(Calendar.MONTH);
-                final int year = cal.get(Calendar.YEAR);
-
-                if (!gotMonths) {
+                mBus.post(new GetMonthTransactionEvent(month, year, lastMonthTotal, lastMonthGraph));
+                mBus.post(new GetMonthTransactionEvent(month + 1, year, thisMonthTotal, thisMonthGraph));
+                /*if (!gotMonths) {
                     mBus.post(new GetMonthTransactionEvent(month, year, lastMonthTotal, lastMonthGraph));
                     mBus.post(new GetMonthTransactionEvent(month + 1, year, thisMonthTotal, thisMonthGraph));
                     gotMonths = true;
@@ -128,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     mBus.post(new SendMonthBalanceEvent(withdrawTotal, depositTotal, month, year, lastMonthTotal, lastMonthGraph));
                     mBus.post(new SendMonthBalanceEvent(withdrawTotal, depositTotal, month+1, year, thisMonthTotal, thisMonthGraph));
-                }
+                } */
 
                 return root;
             }
@@ -147,14 +188,17 @@ public class MainActivity extends AppCompatActivity {
                 transSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        transactions.clear();
+                        transAdapter.notifyDataSetChanged();
                         if (position == 0) {
-
-                        }
-                        else if (position == 1) {
-
-                        }
-                        else if (position == 2) {
-
+                            Log.d("tag", "hit pos 0");
+                            mBus.post(new GetTransactionEvent());
+                        } else if (position == 1) {
+                            Log.d("tag", "hit pos 1");
+                            mBus.post(new GetFullMonthTransactionEvent(month, year));
+                        } else if (position == 2) {
+                            Log.d("tag", "hit pos 2");
+                            mBus.post(new GetFullMonthTransactionEvent(month + 1, year));
                         }
                     }
 
@@ -164,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-                mBus.post(new GetTransactionEvent());
+                //mBus.post(new GetTransactionEvent());
 
                 withdrawButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -174,7 +218,8 @@ public class MainActivity extends AppCompatActivity {
                             input = input.substring(1, input.length());
                             double amount = Double.parseDouble(input);
                             if (amount > 0) {
-                                Transaction newTrans = new Transaction(0, amount);
+                                Date date = new Date(new java.util.Date().getTime());
+                                Transaction newTrans = new Transaction(0, amount, date);
 
                                 transactions.add(0, newTrans);
                                 transAdapter.notifyDataSetChanged();
@@ -183,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
                                 DecimalFormat df = new DecimalFormat("0.00");
                                 totalBalanceView.setText(df.format(depositTotal - withdrawTotal));
 
-                                Call<ResponseBody> createCall = service.createTransaction(newTrans.isDeposit, newTrans.amount, newTrans.date);
+                                Call<ResponseBody> createCall = mApiClient.getTransactionService().createTransaction(newTrans.isDeposit, newTrans.amount, newTrans.date);
                                 createCall.enqueue(new Callback<ResponseBody>() {
                                     @Override
                                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -216,7 +261,8 @@ public class MainActivity extends AppCompatActivity {
                             input = input.substring(1, input.length());
                             double amount = Double.parseDouble(input);
                             if (amount > 0) {
-                                Transaction newTrans = new Transaction(1, amount);
+                                Date date = new Date(new java.util.Date().getTime());
+                                Transaction newTrans = new Transaction(1, amount, date);
 
                                 transactions.add(0, newTrans);
                                 transAdapter.notifyDataSetChanged();
@@ -225,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
                                 DecimalFormat df = new DecimalFormat("0.00");
                                 totalBalanceView.setText(df.format(depositTotal - withdrawTotal));
 
-                                Call<ResponseBody> createCall = service.createTransaction(newTrans.isDeposit, newTrans.amount, newTrans.date);
+                                Call<ResponseBody> createCall = mApiClient.getTransactionService().createTransaction(newTrans.isDeposit, newTrans.amount, newTrans.date);
                                 createCall.enqueue(new Callback<ResponseBody>() {
                                     @Override
                                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -261,17 +307,18 @@ public class MainActivity extends AppCompatActivity {
                 catLabels = (ListView)root.findViewById(R.id.category_labels);
                 catSpinner = (Spinner)root.findViewById(R.id.cat_time_picker);
 
+                catAdapter = new CategoryListAdapter(root.getContext(), categoryLabels);
+                catLabels.setAdapter(catAdapter);
+
                 catSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                         if (position == 0) {
-
-                        }
-                        else if (position == 1) {
-
-                        }
-                        else if (position == 2) {
-
+                            mBus.post(new GetCategoryTotalEvent());
+                        } else if (position == 1) {
+                            mBus.post(new GetMonthCategoryTotalEvent(month, year));
+                        } else if (position == 2) {
+                            mBus.post(new GetMonthCategoryTotalEvent(month + 1, year));
                         }
                     }
 
@@ -281,11 +328,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-                catAdapter = new CategoryListAdapter(root.getContext(), categoryLabels);
-                catLabels.setAdapter(catAdapter);
-
                 //if (total == 0)
-                mBus.post(new GetCategoryTotalEvent());
+                //mBus.post(new GetCategoryTotalEvent());
 
                 return root;
             }
@@ -311,8 +355,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public android.support.v4.app.Fragment getItem(int position) {
-            //return TabFragment.newInstance(position);
-            switch (position) {
+            return TabFragment.newInstance(position);
+            /*switch (position) {
                 case 0:
                     if (overview == null) {
                         overview = TabFragment.newInstance(position);
@@ -330,7 +374,7 @@ public class MainActivity extends AppCompatActivity {
                     return category;
                 default:
                     return TabFragment.newInstance(position);
-            }
+            }*/
         }
 
         @Override
@@ -352,42 +396,6 @@ public class MainActivity extends AppCompatActivity {
             return "Tab " + position;
         }
     }
-
-    private static Bus mBus = BusProvider.bus();
-    private static ApiClient mApiClient = ApiClient.getInstance();
-
-    private static TransactionListAdapter transAdapter;
-    private static List<Transaction> transactions = new ArrayList<>();
-
-    private static TextView totalBalanceView;
-    private static Button withdrawButton;
-    private static Button depositButton;
-    private static CurrencyEditText currencyEditText;
-    private static Spinner transSpinner;
-
-    private static TextView lastMonthTotal;
-    private static TextView thisMonthTotal;
-    private static BarGraph lastMonthGraph;
-    private static BarGraph thisMonthGraph;
-
-    private static PieGraph pg;
-    private static CategoryListAdapter catAdapter;
-    private static List<CategoryLabel> categoryLabels = new ArrayList<>();
-    private static Spinner catSpinner;
-
-    private static double uncategorizedTotal = 0;
-    private static double foodTotal = 0;
-    private static double gasTotal = 0;
-    private static double clothesTotal = 0;
-    private static double techTotal = 0;
-    private static double kitchenTotal = 0;
-    private static double furnitureTotal = 0;
-    private static double total = 0;
-
-    private static double withdrawTotal = 0;
-    private static double depositTotal = 0;
-
-    private static boolean gotMonths = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -421,8 +429,8 @@ public class MainActivity extends AppCompatActivity {
         getTransactionsCall.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                int depositTotal = 0;
-                int withdrawTotal = 0;
+                double depositTotal = 0;
+                double withdrawTotal = 0;
                 try {
                     String body = response.body().string();
                     JSONObject responseObj = new JSONObject(body);
@@ -438,13 +446,21 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             withdrawTotal += amount;
                         }
-                        String dateStr = transObj.getString("date");
-                        Date date = Date.valueOf(dateStr);
                         int category = transObj.getInt("category");
-
-                        Transaction trans = new Transaction(transactionId, isDeposit, amount, date, category);
+                        String dateStr = transObj.getString("date");
+                        Transaction trans;
+                        if (dateStr != null) {
+                            Date date = Date.valueOf(dateStr);
+                            trans = new Transaction(transactionId, isDeposit, amount, date, category);
+                        }
+                        else {
+                            trans = new Transaction(transactionId, isDeposit, amount, category);
+                        }
                         mBus.post(new SendTransactionEvent(trans));
                     }
+                    mBus.post(new SendAmountTotalEvent(withdrawTotal, depositTotal));
+                    Collections.reverse(transactions);
+                    transAdapter.notifyDataSetChanged();
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (JSONException e) {
@@ -459,12 +475,24 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void resetTotals() {
+        uncategorizedTotal = 0;
+        foodTotal = 0;
+        gasTotal = 0;
+        clothesTotal = 0;
+        techTotal = 0;
+        kitchenTotal = 0;
+        furnitureTotal = 0;
+        total = 0;
+    }
+
     @Subscribe
     public void onGetCategoryTotalEvent(GetCategoryTotalEvent event) {
         Call<ResponseBody> getTransactionCall = mApiClient.getTransactionService().getTransactions();
         getTransactionCall.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                resetTotals();
                 try {
                     String body = response.body().string();
                     JSONObject responseObj = new JSONObject(body);
@@ -507,6 +535,102 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Subscribe
+    public void onGetMonthCategoryTotalEvent(GetMonthCategoryTotalEvent event) {
+        Call<ResponseBody> getMonthCategoryTotalCall = mApiClient.getTransactionService().getMonthTransactions(event.getMonth(), event.getYear());
+        getMonthCategoryTotalCall.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                resetTotals();
+                try {
+                    String body = response.body().string();
+                    JSONObject responseObj = new JSONObject(body);
+                    int numTransactions = responseObj.length();
+                    for (int i = 0; i < numTransactions; i++) {
+                        JSONObject transObj = responseObj.getJSONObject("" + i);
+                        double amount = transObj.getDouble("amount");
+                        int category = transObj.getInt("category");
+
+                        if (category == 0) {
+                            uncategorizedTotal += amount;
+                        } else if (category == 1) {
+                            foodTotal += amount;
+                        } else if (category == 2) {
+                            gasTotal += amount;
+                        } else if (category == 3) {
+                            clothesTotal += amount;
+                        } else if (category == 4) {
+                            techTotal += amount;
+                        } else if (category == 5) {
+                            kitchenTotal += amount;
+                        } else if (category == 6) {
+                            furnitureTotal += amount;
+                        }
+                        total += amount;
+                    }
+                    mBus.post(new SendCategoryTotalEvent());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.d("Error", t.getMessage());
+            }
+        });
+    }
+
+    @Subscribe
+    public void onGetFullMonthTransactionEvent(GetFullMonthTransactionEvent event) {
+        final int month = event.getMonth();
+        final int year = event.getYear();
+
+        Call<ResponseBody> getFullMonthTransactionCall = mApiClient.getTransactionService().getMonthTransactions(month, year);
+        getFullMonthTransactionCall.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                double depositTotal = 0.0;
+                double withdrawTotal = 0.0;
+                try {
+                    String body = response.body().string();
+                    JSONObject responseObj = new JSONObject(body);
+                    int numTrans = responseObj.length();
+                    for (int i = 0; i < numTrans; i++) {
+                        JSONObject transObj = responseObj.getJSONObject("" + i);
+                        int transactionId = transObj.getInt("transactionId");
+                        //int userId = transObj.getInt("userId");
+                        int isDeposit = transObj.getInt("isDeposit");
+                        double amount = transObj.getDouble("amount");
+                        if (isDeposit == 1) {
+                            depositTotal += amount;
+                        } else {
+                            withdrawTotal += amount;
+                        }
+                        String dateStr = transObj.getString("date");
+                        Date date = Date.valueOf(dateStr);
+                        int category = transObj.getInt("category");
+
+                        Transaction trans = new Transaction(transactionId, isDeposit, amount, date, category);
+                        mBus.post(new SendTransactionEvent(trans));
+                    }
+                    mBus.post(new SendAmountTotalEvent(withdrawTotal, depositTotal));
+                    Collections.reverse(transactions);
+                    transAdapter.notifyDataSetChanged();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.d("Error", t.getMessage());
+            }
+        });
+    }
+
+    @Subscribe
     public void onGetMonthTransactionEvent(GetMonthTransactionEvent event) {
         final int month = event.getMonth();
         final int year = event.getYear();
@@ -516,8 +640,8 @@ public class MainActivity extends AppCompatActivity {
         getMonthTransactionCall.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                int depositTotal = 0;
-                int withdrawTotal = 0;
+                depositTotal = 0.0;
+                withdrawTotal = 0.0;
                 try {
                     String body = response.body().string();
                     JSONObject responseObj = new JSONObject(body);
@@ -556,7 +680,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Subscribe
+    public void onSendAmountTotalEvent(SendAmountTotalEvent event) {
+        double withdraw = event.getWithdrawAmount();
+        double deposit = event.getDepositAmount();
+        double net = event.getNetAmount();
+        totalBalanceView.setText("$" + net);
+    }
+
+    @Subscribe
     public void onSendCategoryTotalEvent(SendCategoryTotalEvent event) {
+        pg.removeSlices();
         if (uncategorizedTotal > 0) {
             PieSlice slice = new PieSlice();
             slice.setColor(Color.parseColor("#1188AA"));
@@ -600,29 +733,32 @@ public class MainActivity extends AppCompatActivity {
             pg.addSlice(slice);
         }
 
+        categoryLabels.clear();
+        catAdapter.notifyDataSetChanged();
+
         CategoryLabel noLabel = new CategoryLabel("#1188AA", "Uncategorized", (uncategorizedTotal / total) * 100);
         categoryLabels.add(noLabel);
-        catAdapter.notifyDataSetChanged();
+        //catAdapter.notifyDataSetChanged();
 
         CategoryLabel foodLabel = new CategoryLabel("#FFBB33", "Food", (foodTotal / total) * 100);
         categoryLabels.add(foodLabel);
-        catAdapter.notifyDataSetChanged();
+        //catAdapter.notifyDataSetChanged();
 
         CategoryLabel gasLabel = new CategoryLabel("#AA66CC", "Gas", (gasTotal / total) * 100);
         categoryLabels.add(gasLabel);
-        catAdapter.notifyDataSetChanged();
+        //catAdapter.notifyDataSetChanged();
 
         CategoryLabel clothesLabel = new CategoryLabel("#77DD11", "Clothes", (clothesTotal / total) * 100);
         categoryLabels.add(clothesLabel);
-        catAdapter.notifyDataSetChanged();
+        //catAdapter.notifyDataSetChanged();
 
         CategoryLabel techLabel = new CategoryLabel("#33AA55", "Technology", (techTotal / total) * 100);
         categoryLabels.add(techLabel);
-        catAdapter.notifyDataSetChanged();
+        //catAdapter.notifyDataSetChanged();
 
         CategoryLabel kitchenLabel = new CategoryLabel("#DD00FF", "Kitchen Hardware", (kitchenTotal / total) * 100);
         categoryLabels.add(kitchenLabel);
-        catAdapter.notifyDataSetChanged();
+        //catAdapter.notifyDataSetChanged();
 
         CategoryLabel furnitureLabel = new CategoryLabel("#99CC00", "Furniture", (furnitureTotal / total) * 100);
         categoryLabels.add(furnitureLabel);
@@ -701,6 +837,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
-
+        withdrawTotal = savedInstanceState.getDouble("withdrawTotal");
+        depositTotal = savedInstanceState.getDouble("depositTotal");
     }
 }

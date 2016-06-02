@@ -30,6 +30,19 @@ public class Transaction {
         this.amount = amount;
     }
 
+    public Transaction(int isDeposit, double amount, Date date) {
+        this.isDeposit = isDeposit;
+        this.amount = amount;
+        this.date = date;
+    }
+
+    public Transaction(int transactionId, int isDeposit, double amount, int category) {
+        this.transactionId = transactionId;
+        this.isDeposit = isDeposit;
+        this.amount = amount;
+        this.category = category;
+    }
+
     public Transaction(int transactionId, int isDeposit, double amount, Date date, int category) {
         this.transactionId = transactionId;
         this.isDeposit = isDeposit;
