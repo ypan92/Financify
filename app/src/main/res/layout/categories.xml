@@ -13,8 +13,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <TextView
+        android:id="@+id/spending_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/total_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <ypan01.financify.Holograph.PieGraph
         android:id="@+id/pg"
+        android:padding="15dp"
         android:layout_width="match_parent"
         android:layout_height="200dp" />
 

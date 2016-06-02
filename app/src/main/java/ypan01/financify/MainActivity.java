@@ -95,6 +95,11 @@ public class MainActivity extends AppCompatActivity {
     private static double depositTotal = 0;
 
     private static boolean gotMonths = false;
+    private static boolean registeredBus = false;
+
+    private static MonthStringUtil util = new MonthStringUtil();
+
+    private static TextView totalTitle;
 
     public static class TabFragment extends android.support.v4.app.Fragment {
         private static final String TAB_POSITION = "tab_position";
@@ -141,11 +146,6 @@ public class MainActivity extends AppCompatActivity {
             Bundle args = getArguments();
             int tabPosition = args.getInt(TAB_POSITION);
 
-            /*if (savedInstanceState != null) {
-                withdrawTotal = savedInstanceState.getDouble("withdrawTotal");
-                depositTotal = savedInstanceState.getDouble("depositTotal");
-            }*/
-
             Date currentDate = new Date(new java.util.Date().getTime());
             Calendar cal = Calendar.getInstance();
             cal.setTime(currentDate);
@@ -161,15 +161,6 @@ public class MainActivity extends AppCompatActivity {
 
                 mBus.post(new GetMonthTransactionEvent(month, year, lastMonthTotal, lastMonthGraph));
                 mBus.post(new GetMonthTransactionEvent(month + 1, year, thisMonthTotal, thisMonthGraph));
-                /*if (!gotMonths) {
-                    mBus.post(new GetMonthTransactionEvent(month, year, lastMonthTotal, lastMonthGraph));
-                    mBus.post(new GetMonthTransactionEvent(month + 1, year, thisMonthTotal, thisMonthGraph));
-                    gotMonths = true;
-                }
-                else {
-                    mBus.post(new SendMonthBalanceEvent(withdrawTotal, depositTotal, month, year, lastMonthTotal, lastMonthGraph));
-                    mBus.post(new SendMonthBalanceEvent(withdrawTotal, depositTotal, month+1, year, thisMonthTotal, thisMonthGraph));
-                } */
 
                 return root;
             }
@@ -185,19 +176,22 @@ public class MainActivity extends AppCompatActivity {
                 currencyEditText = (CurrencyEditText)root.findViewById(R.id.currency_text);
                 transSpinner = (Spinner)root.findViewById(R.id.trans_time_picker);
 
+
+
                 transSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                         transactions.clear();
                         transAdapter.notifyDataSetChanged();
+
                         if (position == 0) {
-                            Log.d("tag", "hit pos 0");
+
                             mBus.post(new GetTransactionEvent());
                         } else if (position == 1) {
-                            Log.d("tag", "hit pos 1");
+
                             mBus.post(new GetFullMonthTransactionEvent(month, year));
                         } else if (position == 2) {
-                            Log.d("tag", "hit pos 2");
+
                             mBus.post(new GetFullMonthTransactionEvent(month + 1, year));
                         }
                     }
@@ -207,8 +201,6 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-
-                //mBus.post(new GetTransactionEvent());
 
                 withdrawButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -232,11 +224,7 @@ public class MainActivity extends AppCompatActivity {
                                 createCall.enqueue(new Callback<ResponseBody>() {
                                     @Override
                                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                                        if (response.isSuccessful()) {
 
-                                        } else {
-
-                                        }
                                     }
 
                                     @Override
@@ -275,11 +263,7 @@ public class MainActivity extends AppCompatActivity {
                                 createCall.enqueue(new Callback<ResponseBody>() {
                                     @Override
                                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                                        if (response.isSuccessful()) {
 
-                                        } else {
-
-                                        }
                                     }
 
                                     @Override
@@ -310,14 +294,31 @@ public class MainActivity extends AppCompatActivity {
                 catAdapter = new CategoryListAdapter(root.getContext(), categoryLabels);
                 catLabels.setAdapter(catAdapter);
 
+                final TextView spendingTitle = (TextView)root.findViewById(R.id.spending_title);
+                totalTitle = (TextView)root.findViewById(R.id.total_title);
+
                 catSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        String titleEnding = "Spending Report By Category";
+                        spendingTitle.setGravity(Gravity.CENTER);
+                        spendingTitle.setTextSize(24);
+                        spendingTitle.setPadding(15, 15, 15, 15);
+                        TextView tv = (TextView)view;
+                        tv.setGravity(Gravity.CENTER);
+
+                        totalTitle.setGravity(Gravity.CENTER);
+                        totalTitle.setPadding(0, 0, 0, 75);
+                        catLabels.setPadding(0, 75, 0, 0);
+
                         if (position == 0) {
+                            spendingTitle.setText("All Time " + titleEnding);
                             mBus.post(new GetCategoryTotalEvent());
                         } else if (position == 1) {
+                            spendingTitle.setText(util.getMonth(month-1) + " " + year + " " + titleEnding);
                             mBus.post(new GetMonthCategoryTotalEvent(month, year));
                         } else if (position == 2) {
+                            spendingTitle.setText(util.getMonth(month) + " " + year + " " + titleEnding);
                             mBus.post(new GetMonthCategoryTotalEvent(month + 1, year));
                         }
                     }
@@ -327,9 +328,6 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-
-                //if (total == 0)
-                //mBus.post(new GetCategoryTotalEvent());
 
                 return root;
             }
@@ -405,7 +403,7 @@ public class MainActivity extends AppCompatActivity {
         TabPagerAdapter adapter = new TabPagerAdapter(getSupportFragmentManager());
         ViewPager viewPager = (ViewPager)findViewById(R.id.viewpager);
         viewPager.setAdapter(adapter);
-        //viewPager.setCurrentItem(2);
+        viewPager.setCurrentItem(2);
         TabLayout tabLayout = (TabLayout)findViewById(R.id.tablayout);
         tabLayout.setupWithViewPager(viewPager);
 
@@ -414,13 +412,41 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        mBus.register(this);
+        if (!registeredBus) {
+            mBus.register(this);
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         mBus.unregister(this);
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        mBus.register(this);
+        registeredBus = true;
+        transactions.clear();
+        transAdapter.notifyDataSetChanged();
+
+        Date currentDate = new Date(new java.util.Date().getTime());
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(currentDate);
+        final int month = cal.get(Calendar.MONTH);
+        final int year = cal.get(Calendar.YEAR);
+
+        String listScope = transSpinner.getSelectedItem().toString();
+        if (listScope.equals("All Time")) {
+            mBus.post(new GetTransactionEvent());
+        }
+        else if (listScope.equals("Last Month")) {
+            mBus.post(new GetFullMonthTransactionEvent(month, year));
+        }
+        else if (listScope.equals("This Month")) {
+            mBus.post(new GetFullMonthTransactionEvent(month + 1, year));
+        }
     }
 
     @Subscribe
@@ -501,24 +527,29 @@ public class MainActivity extends AppCompatActivity {
                         JSONObject transObj = responseObj.getJSONObject("" + i);
                         double amount = transObj.getDouble("amount");
                         int category = transObj.getInt("category");
+                        int isDeposit = transObj.getInt("isDeposit");
 
-                        if (category == 0) {
-                            uncategorizedTotal += amount;
-                        } else if (category == 1) {
-                            foodTotal += amount;
-                        } else if (category == 2) {
-                            gasTotal += amount;
-                        } else if (category == 3) {
-                            clothesTotal += amount;
-                        } else if (category == 4) {
-                            techTotal += amount;
-                        } else if (category == 5) {
-                            kitchenTotal += amount;
-                        } else if (category == 6) {
-                            furnitureTotal += amount;
+                        if (isDeposit == 0) {
+                            if (category == 0) {
+                                uncategorizedTotal += amount;
+                            } else if (category == 1) {
+                                foodTotal += amount;
+                            } else if (category == 2) {
+                                gasTotal += amount;
+                            } else if (category == 3) {
+                                clothesTotal += amount;
+                            } else if (category == 4) {
+                                techTotal += amount;
+                            } else if (category == 5) {
+                                kitchenTotal += amount;
+                            } else if (category == 6) {
+                                furnitureTotal += amount;
+                            }
+                            total += amount;
                         }
-                        total += amount;
                     }
+                    DecimalFormat df = new DecimalFormat("0.00");
+                    totalTitle.setText("Total Amount Spent: $" + df.format(total));
                     mBus.post(new SendCategoryTotalEvent());
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -549,24 +580,29 @@ public class MainActivity extends AppCompatActivity {
                         JSONObject transObj = responseObj.getJSONObject("" + i);
                         double amount = transObj.getDouble("amount");
                         int category = transObj.getInt("category");
+                        int isDeposit = transObj.getInt("isDeposit");
 
-                        if (category == 0) {
-                            uncategorizedTotal += amount;
-                        } else if (category == 1) {
-                            foodTotal += amount;
-                        } else if (category == 2) {
-                            gasTotal += amount;
-                        } else if (category == 3) {
-                            clothesTotal += amount;
-                        } else if (category == 4) {
-                            techTotal += amount;
-                        } else if (category == 5) {
-                            kitchenTotal += amount;
-                        } else if (category == 6) {
-                            furnitureTotal += amount;
+                        if (isDeposit == 0) {
+                            if (category == 0) {
+                                uncategorizedTotal += amount;
+                            } else if (category == 1) {
+                                foodTotal += amount;
+                            } else if (category == 2) {
+                                gasTotal += amount;
+                            } else if (category == 3) {
+                                clothesTotal += amount;
+                            } else if (category == 4) {
+                                techTotal += amount;
+                            } else if (category == 5) {
+                                kitchenTotal += amount;
+                            } else if (category == 6) {
+                                furnitureTotal += amount;
+                            }
+                            total += amount;
                         }
-                        total += amount;
                     }
+                    DecimalFormat df = new DecimalFormat("0.00");
+                    totalTitle.setText("Total Amount Spent: $" + df.format(total));
                     mBus.post(new SendCategoryTotalEvent());
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -769,7 +805,7 @@ public class MainActivity extends AppCompatActivity {
     public void onSendMonthBalanceEvent(SendMonthBalanceEvent event) {
         double withdrawTotal = event.getWithdrawTotal();
         double depositTotal = event.getDepositTotal();
-        String month = getMonth(event.getMonth() - 1);
+        String month = util.getMonth(event.getMonth() - 1);
         int year = event.getYear();
         TextView monthTotal = event.monthTotal;
         BarGraph monthGraph = event.monthGraph;
@@ -796,34 +832,36 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    protected String getMonth(int month) {
-        switch (month) {
-            case 0:
-                return "January";
-            case 1:
-                return "February";
-            case 2:
-                return "March";
-            case 3:
-                return "April";
-            case 4:
-                return "May";
-            case 5:
-                return "June";
-            case 6:
-                return "July";
-            case 7:
-                return "August";
-            case 8:
-                return "September";
-            case 9:
-                return "October";
-            case 10:
-                return "November";
-            case 11:
-                return "December";
-            default:
-                return "Not a month";
+    public static class MonthStringUtil {
+        protected String getMonth(int month) {
+            switch (month) {
+                case 0:
+                    return "January";
+                case 1:
+                    return "February";
+                case 2:
+                    return "March";
+                case 3:
+                    return "April";
+                case 4:
+                    return "May";
+                case 5:
+                    return "June";
+                case 6:
+                    return "July";
+                case 7:
+                    return "August";
+                case 8:
+                    return "September";
+                case 9:
+                    return "October";
+                case 10:
+                    return "November";
+                case 11:
+                    return "December";
+                default:
+                    return "Not a month";
+            }
         }
     }
 
