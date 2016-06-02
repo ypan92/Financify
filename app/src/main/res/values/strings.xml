@@ -23,6 +23,12 @@
         <item>This Month</item>
     </string-array>
 
+    <string-array name="type_filters">
+        <item>All</item>
+        <item>Withdraw</item>
+        <item>Deposit</item>
+    </string-array>
+
     <string-array name="months">
         <item>January</item>
         <item>February</item>

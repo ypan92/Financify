@@ -21,6 +21,7 @@ public class TransactionView extends LinearLayout {
     private TextView amountText;
     private TextView dateText;
     private ImageView catIcon;
+    private TextView categoryText;
 
     private Transaction transaction;
 

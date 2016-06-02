@@ -51,6 +51,7 @@ import ypan01.financify.Events.GetMonthTransactionEvent;
 import ypan01.financify.Events.GetTransactionEvent;
 import ypan01.financify.Events.SendAmountTotalEvent;
 import ypan01.financify.Events.SendCategoryTotalEvent;
+import ypan01.financify.Events.SendLabelClickEvent;
 import ypan01.financify.Events.SendMonthBalanceEvent;
 import ypan01.financify.Events.SendTransactionEvent;
 import ypan01.financify.Holograph.Bar;
@@ -100,6 +101,17 @@ public class MainActivity extends AppCompatActivity {
     private static MonthStringUtil util = new MonthStringUtil();
 
     private static TextView totalTitle;
+
+    private static PieSlice uncategorizedSlice;
+    private static PieSlice foodSlice;
+    private static PieSlice gasSlice;
+    private static PieSlice clothesSlice;
+    private static PieSlice technologySlice;
+    private static PieSlice kitchenSlice;
+    private static PieSlice furnitureSlice;
+    private static ArrayList<PieSlice> pgSlices = new ArrayList<>();
+
+    private static Spinner typeSpinner;
 
     public static class TabFragment extends android.support.v4.app.Fragment {
         private static final String TAB_POSITION = "tab_position";
@@ -175,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
                 depositButton = (Button)root.findViewById(R.id.deposit_button);
                 currencyEditText = (CurrencyEditText)root.findViewById(R.id.currency_text);
                 transSpinner = (Spinner)root.findViewById(R.id.trans_time_picker);
-
+                typeSpinner = (Spinner)root.findViewById(R.id.type_spinner);
 
 
                 transSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -277,6 +289,18 @@ public class MainActivity extends AppCompatActivity {
                                 imm.hideSoftInputFromWindow(currencyEditText.getWindowToken(), 0);
                             }
                         }
+                    }
+                });
+
+                typeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+
                     }
                 });
 
@@ -720,53 +744,62 @@ public class MainActivity extends AppCompatActivity {
         double withdraw = event.getWithdrawAmount();
         double deposit = event.getDepositAmount();
         double net = event.getNetAmount();
-        totalBalanceView.setText("$" + net);
+        DecimalFormat df = new DecimalFormat("0.00");
+        totalBalanceView.setText("$" + df.format(net));
     }
 
     @Subscribe
     public void onSendCategoryTotalEvent(SendCategoryTotalEvent event) {
         pg.removeSlices();
+        pgSlices.clear();
         if (uncategorizedTotal > 0) {
-            PieSlice slice = new PieSlice();
-            slice.setColor(Color.parseColor("#1188AA"));
-            slice.setValue((float)uncategorizedTotal);
-            pg.addSlice(slice);
+            uncategorizedSlice = new PieSlice();
+            uncategorizedSlice.setColor(Color.parseColor("#1188AA"));
+            uncategorizedSlice.setValue((float) uncategorizedTotal);
+            pg.addSlice(uncategorizedSlice);
+            pgSlices.add(uncategorizedSlice);
         }
         if (foodTotal > 0) {
-            PieSlice slice = new PieSlice();
-            slice.setColor(Color.parseColor("#FFBB33"));
-            slice.setValue((float)foodTotal);
-            pg.addSlice(slice);
+            foodSlice = new PieSlice();
+            foodSlice.setColor(Color.parseColor("#FFBB33"));
+            foodSlice.setValue((float) foodTotal);
+            pg.addSlice(foodSlice);
+            pgSlices.add(foodSlice);
         }
         if (gasTotal > 0) {
-            PieSlice slice = new PieSlice();
-            slice.setColor(Color.parseColor("#AA66CC"));
-            slice.setValue((float)gasTotal);
-            pg.addSlice(slice);
+            gasSlice = new PieSlice();
+            gasSlice.setColor(Color.parseColor("#AA66CC"));
+            gasSlice.setValue((float) gasTotal);
+            pg.addSlice(gasSlice);
+            pgSlices.add(gasSlice);
         }
         if (clothesTotal > 0) {
-            PieSlice slice = new PieSlice();
-            slice.setColor(Color.parseColor("#77DD11"));
-            slice.setValue((float)clothesTotal);
-            pg.addSlice(slice);
+            clothesSlice = new PieSlice();
+            clothesSlice.setColor(Color.parseColor("#77DD11"));
+            clothesSlice.setValue((float) clothesTotal);
+            pg.addSlice(clothesSlice);
+            pgSlices.add(clothesSlice);
         }
         if (techTotal > 0) {
-            PieSlice slice = new PieSlice();
-            slice.setColor(Color.parseColor("#33AA55"));
-            slice.setValue((float)techTotal);
-            pg.addSlice(slice);
+            technologySlice = new PieSlice();
+            technologySlice.setColor(Color.parseColor("#33AA55"));
+            technologySlice.setValue((float) techTotal);
+            pg.addSlice(technologySlice);
+            pgSlices.add(technologySlice);
         }
         if (kitchenTotal > 0) {
-            PieSlice slice = new PieSlice();
-            slice.setColor(Color.parseColor("#DD00FF"));
-            slice.setValue((float)kitchenTotal);
-            pg.addSlice(slice);
+            kitchenSlice = new PieSlice();
+            kitchenSlice.setColor(Color.parseColor("#DD00FF"));
+            kitchenSlice.setValue((float) kitchenTotal);
+            pg.addSlice(kitchenSlice);
+            pgSlices.add(kitchenSlice);
         }
         if (furnitureTotal > 0) {
-            PieSlice slice = new PieSlice();
-            slice.setColor(Color.parseColor("#99CC00"));
-            slice.setValue((float) furnitureTotal);
-            pg.addSlice(slice);
+            furnitureSlice = new PieSlice();
+            furnitureSlice.setColor(Color.parseColor("#99CC00"));
+            furnitureSlice.setValue((float) furnitureTotal);
+            pg.addSlice(furnitureSlice);
+            pgSlices.add(furnitureSlice);
         }
 
         categoryLabels.clear();
@@ -830,6 +863,15 @@ public class MainActivity extends AppCompatActivity {
         monthGraph.setBars(monthPoints);
         monthGraph.setUnit("$");
 
+    }
+
+    @Subscribe
+    public void onSendLabelClickEvent(SendLabelClickEvent event) {
+        String clickedLabelName = event.getLabelName();
+        if (clickedLabelName.equals("Uncategorized")) {
+            uncategorizedSlice.setTitle("$" + uncategorizedTotal);
+            pg.update();
+        }
     }
 
     public static class MonthStringUtil {

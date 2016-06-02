@@ -44,6 +44,11 @@
             android:layout_height="wrap_content"
             android:text="@string/deposit"/>
     </LinearLayout>
+    <Spinner
+        android:id="@+id/type_spinner"
+        android:entries="@array/type_filters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
     <ListView android:id="@+id/trans_list"
         android:padding="5dp"
         android:layout_width="match_parent"
