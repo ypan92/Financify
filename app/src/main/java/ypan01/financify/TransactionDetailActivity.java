@@ -108,6 +108,16 @@ public class TransactionDetailActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("trans_id", transaction.transactionId);
+        outState.putInt("trans_isDeposit", transaction.isDeposit);
+        outState.putDouble("trans_amount", transaction.amount);
+        outState.putString("trans_date", transaction.date.toString());
+        outState.putInt("trans_cat", transaction.category);
+    }
+
     protected int getCategoryId(String categoryName) {
         if (categoryName.equals("Food")) {
             return 1;

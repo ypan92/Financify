@@ -32,6 +32,8 @@
         </LinearLayout>
 
         <LinearLayout
+            android:paddingTop="14dp"
+            android:layout_gravity="right"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 

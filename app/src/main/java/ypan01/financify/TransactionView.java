@@ -36,6 +36,7 @@ public class TransactionView extends LinearLayout {
         amountText = (TextView)findViewById(R.id.trans_amount_text);
         dateText = (TextView)findViewById(R.id.trans_date);
         catIcon = (ImageView)findViewById(R.id.trans_cat_icon);
+        categoryText = (TextView)findViewById(R.id.category_text);
 
         //amountText.setTextSize(TypedValue.COMPLEX_UNIT_PX, 16);
 
@@ -56,6 +57,8 @@ public class TransactionView extends LinearLayout {
             transTypeText.setText("Transaction type: Withdraw");
             amountText.setText("-" + formattedAmt);
         }
+
+        categoryText.setText("Category: " + trans.getCategoryName());
 
         Calendar cal = Calendar.getInstance();
         cal.setTime(trans.date);

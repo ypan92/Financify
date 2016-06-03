@@ -1,7 +1,12 @@
 package ypan01.financify;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BlurMaskFilter;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
@@ -112,6 +117,9 @@ public class MainActivity extends AppCompatActivity {
     private static ArrayList<PieSlice> pgSlices = new ArrayList<>();
 
     private static Spinner typeSpinner;
+    private static List<Transaction> masterFilterList = new ArrayList<>();
+    private static TextView withdrawTotalView;
+    private static TextView depositTotalView;
 
     public static class TabFragment extends android.support.v4.app.Fragment {
         private static final String TAB_POSITION = "tab_position";
@@ -149,6 +157,9 @@ public class MainActivity extends AppCompatActivity {
                 withdrawTotal = savedInstanceState.getDouble("withdrawTotal");
                 depositTotal = savedInstanceState.getDouble("depositTotal");
             }
+            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(currencyEditText.getWindowToken(), 0);
+
         }
 
         @Nullable
@@ -189,21 +200,22 @@ public class MainActivity extends AppCompatActivity {
                 transSpinner = (Spinner)root.findViewById(R.id.trans_time_picker);
                 typeSpinner = (Spinner)root.findViewById(R.id.type_spinner);
 
+                withdrawTotalView = (TextView)root.findViewById(R.id.withdraw_balance_amount);
+                depositTotalView = (TextView)root.findViewById(R.id.deposit_balance_amount);
 
                 transSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                         transactions.clear();
                         transAdapter.notifyDataSetChanged();
+                        masterFilterList.clear();
+                        typeSpinner.setSelection(0);
 
                         if (position == 0) {
-
                             mBus.post(new GetTransactionEvent());
                         } else if (position == 1) {
-
                             mBus.post(new GetFullMonthTransactionEvent(month, year));
                         } else if (position == 2) {
-
                             mBus.post(new GetFullMonthTransactionEvent(month + 1, year));
                         }
                     }
@@ -226,17 +238,19 @@ public class MainActivity extends AppCompatActivity {
                                 Transaction newTrans = new Transaction(0, amount, date);
 
                                 transactions.add(0, newTrans);
+                                masterFilterList.add(newTrans);
                                 transAdapter.notifyDataSetChanged();
 
                                 withdrawTotal += amount;
                                 DecimalFormat df = new DecimalFormat("0.00");
                                 totalBalanceView.setText(df.format(depositTotal - withdrawTotal));
+                                //withdrawTotalView.setText("$" + df.format(withdrawTotal));
 
                                 Call<ResponseBody> createCall = mApiClient.getTransactionService().createTransaction(newTrans.isDeposit, newTrans.amount, newTrans.date);
                                 createCall.enqueue(new Callback<ResponseBody>() {
                                     @Override
                                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-
+                                        transSpinner.setSelection(0);
                                     }
 
                                     @Override
@@ -265,17 +279,19 @@ public class MainActivity extends AppCompatActivity {
                                 Transaction newTrans = new Transaction(1, amount, date);
 
                                 transactions.add(0, newTrans);
+                                masterFilterList.add(newTrans);
                                 transAdapter.notifyDataSetChanged();
 
                                 depositTotal += amount;
                                 DecimalFormat df = new DecimalFormat("0.00");
                                 totalBalanceView.setText(df.format(depositTotal - withdrawTotal));
+                                //depositTotalView.setText("$" + df.format(depositTotal));
 
                                 Call<ResponseBody> createCall = mApiClient.getTransactionService().createTransaction(newTrans.isDeposit, newTrans.amount, newTrans.date);
                                 createCall.enqueue(new Callback<ResponseBody>() {
                                     @Override
                                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-
+                                        transSpinner.setSelection(0);
                                     }
 
                                     @Override
@@ -295,7 +311,33 @@ public class MainActivity extends AppCompatActivity {
                 typeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-
+                        transactions.clear();
+                        transAdapter.notifyDataSetChanged();
+                        if (position == 0) {
+                            for (Transaction trans : masterFilterList) {
+                                transactions.add(trans);
+                            }
+                            Collections.reverse(transactions);
+                            transAdapter.notifyDataSetChanged();
+                        }
+                        else if (position == 1) {
+                            for (Transaction trans : masterFilterList) {
+                                if (trans.isDeposit == 0) {
+                                    transactions.add(trans);
+                                }
+                            }
+                            Collections.reverse(transactions);
+                            transAdapter.notifyDataSetChanged();
+                        }
+                        else if (position == 2) {
+                            for (Transaction trans : masterFilterList) {
+                                if (trans.isDeposit == 1) {
+                                    transactions.add(trans);
+                                }
+                            }
+                            Collections.reverse(transactions);
+                            transAdapter.notifyDataSetChanged();
+                        }
                     }
 
                     @Override
@@ -328,8 +370,8 @@ public class MainActivity extends AppCompatActivity {
                         spendingTitle.setGravity(Gravity.CENTER);
                         spendingTitle.setTextSize(24);
                         spendingTitle.setPadding(15, 15, 15, 15);
-                        TextView tv = (TextView)view;
-                        tv.setGravity(Gravity.CENTER);
+                        //TextView tv = (TextView)view;
+                        //tv.setGravity(Gravity.CENTER);
 
                         totalTitle.setGravity(Gravity.CENTER);
                         totalTitle.setPadding(0, 0, 0, 75);
@@ -427,7 +469,7 @@ public class MainActivity extends AppCompatActivity {
         TabPagerAdapter adapter = new TabPagerAdapter(getSupportFragmentManager());
         ViewPager viewPager = (ViewPager)findViewById(R.id.viewpager);
         viewPager.setAdapter(adapter);
-        viewPager.setCurrentItem(2);
+        //viewPager.setCurrentItem(2);
         TabLayout tabLayout = (TabLayout)findViewById(R.id.tablayout);
         tabLayout.setupWithViewPager(viewPager);
 
@@ -736,6 +778,7 @@ public class MainActivity extends AppCompatActivity {
     public void onSendTransactionEvent(SendTransactionEvent event) {
         Transaction trans = event.getTransaction();
         transactions.add(trans);
+        masterFilterList.add(trans);
         transAdapter.notifyDataSetChanged();
     }
 
@@ -746,6 +789,8 @@ public class MainActivity extends AppCompatActivity {
         double net = event.getNetAmount();
         DecimalFormat df = new DecimalFormat("0.00");
         totalBalanceView.setText("$" + df.format(net));
+        withdrawTotalView.setText("$" + df.format(withdraw));
+        depositTotalView.setText("$" + df.format(deposit));
     }
 
     @Subscribe
@@ -805,31 +850,31 @@ public class MainActivity extends AppCompatActivity {
         categoryLabels.clear();
         catAdapter.notifyDataSetChanged();
 
-        CategoryLabel noLabel = new CategoryLabel("#1188AA", "Uncategorized", (uncategorizedTotal / total) * 100);
+        CategoryLabel noLabel = new CategoryLabel("#1188AA", "Uncategorized", (uncategorizedTotal / total) * 100, uncategorizedTotal);
         categoryLabels.add(noLabel);
         //catAdapter.notifyDataSetChanged();
 
-        CategoryLabel foodLabel = new CategoryLabel("#FFBB33", "Food", (foodTotal / total) * 100);
+        CategoryLabel foodLabel = new CategoryLabel("#FFBB33", "Food", (foodTotal / total) * 100, foodTotal);
         categoryLabels.add(foodLabel);
         //catAdapter.notifyDataSetChanged();
 
-        CategoryLabel gasLabel = new CategoryLabel("#AA66CC", "Gas", (gasTotal / total) * 100);
+        CategoryLabel gasLabel = new CategoryLabel("#AA66CC", "Gas", (gasTotal / total) * 100, gasTotal);
         categoryLabels.add(gasLabel);
         //catAdapter.notifyDataSetChanged();
 
-        CategoryLabel clothesLabel = new CategoryLabel("#77DD11", "Clothes", (clothesTotal / total) * 100);
+        CategoryLabel clothesLabel = new CategoryLabel("#77DD11", "Clothes", (clothesTotal / total) * 100, clothesTotal);
         categoryLabels.add(clothesLabel);
         //catAdapter.notifyDataSetChanged();
 
-        CategoryLabel techLabel = new CategoryLabel("#33AA55", "Technology", (techTotal / total) * 100);
+        CategoryLabel techLabel = new CategoryLabel("#33AA55", "Technology", (techTotal / total) * 100, techTotal);
         categoryLabels.add(techLabel);
         //catAdapter.notifyDataSetChanged();
 
-        CategoryLabel kitchenLabel = new CategoryLabel("#DD00FF", "Kitchen Hardware", (kitchenTotal / total) * 100);
+        CategoryLabel kitchenLabel = new CategoryLabel("#DD00FF", "Kitchen Hardware", (kitchenTotal / total) * 100, kitchenTotal);
         categoryLabels.add(kitchenLabel);
         //catAdapter.notifyDataSetChanged();
 
-        CategoryLabel furnitureLabel = new CategoryLabel("#99CC00", "Furniture", (furnitureTotal / total) * 100);
+        CategoryLabel furnitureLabel = new CategoryLabel("#99CC00", "Furniture", (furnitureTotal / total) * 100, furnitureTotal);
         categoryLabels.add(furnitureLabel);
         catAdapter.notifyDataSetChanged();
     }
@@ -870,7 +915,7 @@ public class MainActivity extends AppCompatActivity {
         String clickedLabelName = event.getLabelName();
         if (clickedLabelName.equals("Uncategorized")) {
             uncategorizedSlice.setTitle("$" + uncategorizedTotal);
-            pg.update();
+
         }
     }
 
@@ -919,5 +964,21 @@ public class MainActivity extends AppCompatActivity {
         super.onRestoreInstanceState(savedInstanceState);
         withdrawTotal = savedInstanceState.getDouble("withdrawTotal");
         depositTotal = savedInstanceState.getDouble("depositTotal");
+
+        Date currentDate = new Date(new java.util.Date().getTime());
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(currentDate);
+        final int month = cal.get(Calendar.MONTH);
+        final int year = cal.get(Calendar.YEAR);
+
+        mBus.register(this);
+        registeredBus = true;
+
+        mBus.post(new GetMonthTransactionEvent(month, year, lastMonthTotal, lastMonthGraph));
+        mBus.post(new GetMonthTransactionEvent(month + 1, year, thisMonthTotal, thisMonthGraph));
+
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(currencyEditText.getWindowToken(), 0);
+
     }
 }

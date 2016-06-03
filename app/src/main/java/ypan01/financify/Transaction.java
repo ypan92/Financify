@@ -71,4 +71,25 @@ public class Transaction {
                 return "#1188AA";
         }
     }
+
+    public String getCategoryName() {
+        switch(category) {
+            case 0:
+                return "Uncategorized";
+            case 1:
+                return "Food";
+            case 2:
+                return "Gas";
+            case 3:
+                return "Clothes";
+            case 4:
+                return "Technology";
+            case 5:
+                return "Kitchen Hardware";
+            case 6:
+                return "Furniture";
+            default:
+                return "Invalid";
+        }
+    }
 }

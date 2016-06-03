@@ -36,7 +36,7 @@ public class CategoryView extends LinearLayout {
     public void setCategoryLabel(CategoryLabel categoryLabel) {
         imageView.setBackgroundColor(Color.parseColor(categoryLabel.color));
         DecimalFormat df = new DecimalFormat("0.00");
-        labelName.setText(categoryLabel.name + " (" + df.format(categoryLabel.percent) + "%)");
+        labelName.setText(categoryLabel.name + " (" + df.format(categoryLabel.percent) + "%) $" + df.format(categoryLabel.amount));
     }
 
 }

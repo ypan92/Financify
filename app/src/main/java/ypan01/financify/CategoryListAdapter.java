@@ -48,7 +48,7 @@ public class CategoryListAdapter extends BaseAdapter {
     public View getView(final int position, View convertView, ViewGroup parent) {
         if (convertView == null) {
             final CategoryView newView = new CategoryView(m_context, categories.get(position));
-            newView.setOnClickListener(new View.OnClickListener() {
+            /*newView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     CategoryLabel clickedLabel = categories.get(position);
@@ -74,13 +74,13 @@ public class CategoryListAdapter extends BaseAdapter {
 
                     }
                 }
-            });
+            });*/
             return newView;
         }
         else {
             CategoryView existingView = (CategoryView)convertView;
             existingView.setCategoryLabel(categories.get(position));
-            existingView.setOnClickListener(new View.OnClickListener() {
+            /*existingView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     CategoryLabel clickedLabel = categories.get(position);
@@ -106,7 +106,7 @@ public class CategoryListAdapter extends BaseAdapter {
 
                     }
                 }
-            });
+            });*/
             return existingView;
         }
     }
